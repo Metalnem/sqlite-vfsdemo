@@ -1,81 +1,81 @@
 #include "sqlite3.h"
 #include "stdio.h"
 
-int vfsexclusive_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile, int flags, int *pOutFlags)
+int vfsdemo_open(sqlite3_vfs *vfs, const char *name, sqlite3_file *file, int flags, int *outFlags)
 {
-	sqlite3_vfs *pRoot = (sqlite3_vfs *)pVfs->pAppData;
+	sqlite3_vfs *root = (sqlite3_vfs *)vfs->pAppData;
 
 	if (flags & (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_MAIN_DB))
 	{
 		flags |= SQLITE_OPEN_EXCLUSIVE;
 	}
 
-	return pRoot->xOpen(pRoot, zName, pFile, flags, pOutFlags);
+	return root->xOpen(root, name, file, flags, outFlags);
 }
 
-int vfsexclusive_register()
+int vfsdemo_register()
 {
-	sqlite3_vfs *pRoot;
-	sqlite3_vfs *pNew;
+	sqlite3_vfs *root;
+	sqlite3_vfs *vfs;
 
-	if ((pRoot = sqlite3_vfs_find(NULL)) == 0)
+	if ((root = sqlite3_vfs_find(NULL)) == NULL)
 	{
 		return SQLITE_NOTFOUND;
 	}
 
-	if ((pNew = sqlite3_malloc(sizeof(*pNew))) == 0)
+	if ((vfs = sqlite3_malloc(sizeof(*vfs))) == NULL)
 	{
 		return SQLITE_NOMEM;
 	}
 
-	*pNew = *pRoot;
+	vfs->iVersion = root->iVersion;
+	vfs->szOsFile = root->szOsFile;
+	vfs->mxPathname = root->mxPathname;
+	vfs->zName = "vfsdemo";
+	vfs->pAppData = root;
+	vfs->xOpen = vfsdemo_open;
+	vfs->xDelete = root->xDelete;
+	vfs->xAccess = root->xAccess;
+	vfs->xFullPathname = root->xFullPathname;
+	vfs->xDlOpen = root->xDlOpen;
+	vfs->xDlError = root->xDlError;
+	vfs->xDlSym = root->xDlSym;
+	vfs->xDlClose = root->xDlClose;
+	vfs->xRandomness = root->xRandomness;
+	vfs->xSleep = root->xSleep;
+	vfs->xCurrentTime = root->xCurrentTime;
+	vfs->xGetLastError = root->xGetLastError;
+	vfs->xCurrentTimeInt64 = root->xCurrentTimeInt64;
 
-	pNew->pAppData = pRoot;
-	pNew->xOpen = vfsexclusive_open;
-
-	return sqlite3_vfs_register(pNew, 1);
+	return sqlite3_vfs_register(vfs, 1);
 }
 
 int main()
 {
-	sqlite3 *pDb;
-	sqlite3_vfs *pVfs;
-	char *sql, *errmsg;
+	sqlite3 *db;
+	char *sql, *err;
 	int flags, rc;
 
-	if ((rc = vfsexclusive_register()) > 0)
+	if ((rc = vfsdemo_register()) > 0)
 	{
 		printf("%s\n", sqlite3_errstr(rc));
 		return rc;
 	}
 
-	flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_EXCLUSIVE;
+	flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
 
-	if ((rc = sqlite3_open_v2("test.db", &pDb, flags, NULL)) > 0)
+	if ((rc = sqlite3_open_v2("test.db", &db, flags, NULL)) > 0)
 	{
 		printf("%s\n", sqlite3_errstr(rc));
 		return rc;
 	}
 
-	sql = "CREATE TABLE foo(id PRIMARY KEY);";
+	sql = "CREATE TABLE IF NOT EXISTS foo(value); \
+		INSERT INTO foo(value) VALUES('value');";
 
-	if ((rc = sqlite3_exec(pDb, sql, NULL, NULL, &errmsg)) > 0)
+	if ((rc = sqlite3_exec(db, sql, NULL, NULL, &err)) > 0)
 	{
-		printf("%s\n", errmsg);
-		return rc;
-	}
-
-	sql = "INSERT INTO foo(id) VALUES('18cff17188b2fe4c9ee82d5f559ef19d');";
-
-	if ((rc = sqlite3_exec(pDb, sql, NULL, NULL, &errmsg)) > 0)
-	{
-		printf("%s\n", errmsg);
-		return rc;
-	}
-
-	if ((rc = sqlite3_close_v2(pDb)) > 0)
-	{
-		printf("%s\n", sqlite3_errstr(rc));
+		printf("%s\n", err);
 		return rc;
 	}
 
