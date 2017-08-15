@@ -1,7 +1,7 @@
 all: vfsdemo
 
 vfsdemo: main.o sqlite3.o
-	gcc -pthread main.o sqlite3.o -o vfsdemo -ldl
+	gcc main.o sqlite3.o -o vfsdemo -lpthread -ldl
 
 main.o: main.c
 	gcc -c main.c
