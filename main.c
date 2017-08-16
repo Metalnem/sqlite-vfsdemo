@@ -1,5 +1,6 @@
 #include "sqlite3.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 int vfsdemo_open(sqlite3_vfs *vfs, const char *name, sqlite3_file *file, int flags, int *outFlags)
 {
@@ -58,16 +59,16 @@ int main()
 
 	if ((rc = vfsdemo_register()) > 0)
 	{
-		printf("%s\n", sqlite3_errstr(rc));
-		return rc;
+		fprintf(stderr, "%s\n", sqlite3_errstr(rc));
+		exit(1);
 	}
 
 	flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
 
 	if ((rc = sqlite3_open_v2("test.db", &db, flags, NULL)) > 0)
 	{
-		printf("%s\n", sqlite3_errstr(rc));
-		return rc;
+		fprintf(stderr, "%s\n", sqlite3_errstr(rc));
+		exit(1);
 	}
 
 	sql = "CREATE TABLE IF NOT EXISTS foo(value); \
@@ -75,8 +76,8 @@ int main()
 
 	if ((rc = sqlite3_exec(db, sql, NULL, NULL, &err)) > 0)
 	{
-		printf("%s\n", err);
-		return rc;
+		fprintf(stderr, "%s\n", err);
+		exit(1);
 	}
 
 	return 0;
