@@ -3,4 +3,5 @@
 VFS implementation for SQLite that creates the database file if it
 doesn't exist, and fails otherwise. It does that by forcing the
 **SQLITE_OPEN_EXCLUSIVE** flag, which is normally stripped by
-SQLite for some reason.
+SQLite for some reason. For more details visit my blog post
+[Adventures with SQLite and SQLITE_OPEN_EXCLUSIVE](https://mijailovic.net/2017/08/27/sqlite-adventures/).
